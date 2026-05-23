@@ -1,0 +1,6 @@
+{
+  "name": "AFK Minet",
+  "description": "Ứng dụng chạy ngầm (AFK) treo máy hỗ trợ proxy đào coin và chia sẻ băng thông Minet.vn",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
