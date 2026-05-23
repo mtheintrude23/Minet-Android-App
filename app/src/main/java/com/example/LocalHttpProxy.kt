@@ -23,7 +23,7 @@ class LocalHttpProxy(private val port: Int) {
                 serverSocket = ServerSocket(port, 128, java.net.InetAddress.getByName("127.0.0.1")).apply {
                     reuseAddress = true
                 }
-                onLog("Hệ thống proxy HTTP đang chạy tại 127.0.0.1:$port")
+                onLog("HTTP proxy system running at 127.0.0.1:$port")
                 MinetManager.updateStats { it.copy(proxyActive = true) }
 
                 while (isActive) {
@@ -38,7 +38,7 @@ class LocalHttpProxy(private val port: Int) {
                     }
                 }
             } catch (e: Exception) {
-                onLog("Lỗi khởi tạo Proxy Server: ${e.message}")
+                onLog("Proxy Server initialization error: ${e.message}")
             } finally {
                 MinetManager.updateStats { it.copy(proxyActive = false) }
             }
@@ -51,7 +51,7 @@ class LocalHttpProxy(private val port: Int) {
         } catch (e: Exception) {}
         job?.cancel()
         scope.cancel()
-        onLog("Đã dừng proxy HTTP.")
+        onLog("HTTP proxy stopped.")
     }
 
     private suspend fun handleClient(client: Socket) {
@@ -107,13 +107,13 @@ class LocalHttpProxy(private val port: Int) {
                     remoteHost = targetParts[0]
                     remotePort = targetParts.getOrNull(1)?.toIntOrNull() ?: 443
 
-                    onLog("Proxy kết nối [HTTPS]: $remoteHost:$remotePort")
+                    onLog("Proxy connected [HTTPS]: $remoteHost:$remotePort")
                     try {
                         upstream = Socket(remoteHost, remotePort).apply {
                             soTimeout = 60000
                         }
                     } catch (e: Exception) {
-                        onLog("Proxy lỗi kết nối đến $remoteHost:$remotePort - ${e.message}")
+                        onLog("Proxy connection error to $remoteHost:$remotePort - ${e.message}")
                         try {
                             writer.write("HTTP/1.1 502 Bad Gateway\r\n\r\n".toByteArray())
                             writer.flush()
@@ -158,13 +158,13 @@ class LocalHttpProxy(private val port: Int) {
                         return@withContext
                     }
 
-                    onLog("Proxy kết nối [HTTP]: $method $remoteHost:$remotePort")
+                    onLog("Proxy connected [HTTP]: $method $remoteHost:$remotePort")
                     try {
                         upstream = Socket(remoteHost, remotePort).apply {
                             soTimeout = 60000
                         }
                     } catch (e: Exception) {
-                        onLog("Proxy lỗi kết nối đến $remoteHost:$remotePort - ${e.message}")
+                        onLog("Proxy connection error to $remoteHost:$remotePort - ${e.message}")
                         try { client.close() } catch (ex: Exception) {}
                         return@withContext
                     }

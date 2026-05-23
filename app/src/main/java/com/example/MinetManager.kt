@@ -48,8 +48,6 @@ object MinetManager {
     private val bytesCounter = AtomicLong(0)
 
     init {
-        addLog("Hệ thống AFK Minet đã khởi tạo.")
-
         // Throttled traffic updater to keep Compose Main Thread safe
         @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch(Dispatchers.Default) {
@@ -95,7 +93,6 @@ object MinetManager {
         synchronized(logLock) {
             logList.clear()
             _logs.value = emptyList()
-            addLog("Đã xóa nhật ký log.")
         }
     }
     

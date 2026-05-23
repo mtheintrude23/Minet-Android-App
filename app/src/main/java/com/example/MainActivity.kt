@@ -108,9 +108,9 @@ fun MinetDashboardScreen(modifier: Modifier = Modifier) {
     ) { isGranted ->
         hasNotificationPermission = isGranted
         if (isGranted) {
-            Toast.makeText(context, "Đã cấp quyền thông báo!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Notification permission granted!", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(context, "Thiếu quyền thông báo, dịch vụ AFK có thể không hiển thị đúng.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Missing notification permission, AFK service might not display correctly.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -161,7 +161,7 @@ fun MinetDashboardScreen(modifier: Modifier = Modifier) {
                     onStart = {
                         val cleanEmail = emailInput.trim()
                         if (cleanEmail.isEmpty()) {
-                            Toast.makeText(context, "Vui lòng nhập Email Minet!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter Minet Email!", Toast.LENGTH_SHORT).show()
                         } else {
                             // Persist settings
                             prefs.edit()
@@ -203,7 +203,7 @@ fun MinetDashboardScreen(modifier: Modifier = Modifier) {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = android.content.ClipData.newPlainText("Minet AFK Logs", logs.joinToString("\n"))
                         clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, "Đã sao chép log vào khay nhớ tạm!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Copied log to clipboard!", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -247,7 +247,7 @@ fun AppHeader(status: MiningStatus) {
                 color = CyberPrimary
             )
             Text(
-                text = "Hệ thống treo máy chia sẻ proxy v1.0",
+                text = "Proxy share AFK system v1.0",
                 style = MaterialTheme.typography.labelSmall,
                 color = CyberGray
             )
@@ -313,7 +313,7 @@ fun InputCard(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "1. CẤU HÌNH THÔNG TIN",
+                text = "1. CONFIGURATION",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
@@ -326,8 +326,8 @@ fun InputCard(
                 value = email,
                 onValueChange = onEmailChange,
                 enabled = isEnabled,
-                label = { Text("Email tài khoản Minet.vn") },
-                placeholder = { Text("Nhập Email đăng ký") },
+                label = { Text("Minet.vn Account Email") },
+                placeholder = { Text("Enter your Email") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -357,8 +357,8 @@ fun InputCard(
                 value = proxy,
                 onValueChange = onProxyChange,
                 enabled = isEnabled,
-                label = { Text("Proxy API kết nối (Tùy chọn)") },
-                placeholder = { Text("Ví dụ: socks5://127.0.0.1:1080") },
+                label = { Text("API Proxy Connection (Optional)") },
+                placeholder = { Text("Ex: socks5://127.0.0.1:1080") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Uri,
@@ -384,7 +384,7 @@ fun InputCard(
             )
             
             Text(
-                text = "* Lưu ý: Proxy trên chỉ dùng để gửi các yêu cầu API (heartbeat/update-ip) vượt tường lửa nếu cần. Tunnel chính vẫn sẽ chạy qua FRPC.",
+                text = "* Note: This proxy is only used to send API requests (heartbeat/update-ip) to bypass firewall if necessary. Tunnel still relies on FRPC.",
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = CyberGray
             )
@@ -431,7 +431,7 @@ fun ActionControlsCard(
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Start")
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "BẮT ĐẦU AFK",
+                    text = "START AFK",
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 )
@@ -456,7 +456,7 @@ fun ActionControlsCard(
                 Icon(imageVector = Icons.Default.Close, contentDescription = "Stop")
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "DỪNG LẠI",
+                    text = "STOP",
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 )
@@ -483,7 +483,7 @@ fun DownloadingProgressCard(progress: Float) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "ĐANG TẢI FRPC BINARY...",
+                    text = "DOWNLOADING FRPC BINARY...",
                     style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                     color = CyberSecondary
                 )
@@ -494,13 +494,14 @@ fun DownloadingProgressCard(progress: Float) {
                 )
             }
             LinearProgressIndicator(
-                progress = progress,
+                progress = { progress },
                 color = CyberSecondary,
                 trackColor = CyberGray.copy(alpha = 0.2f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(4.dp)),
+                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
         }
     }
@@ -519,7 +520,7 @@ fun StatsGridCard(stats: MiningStats, status: MiningStatus) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "2. THÔNG SỐ HOẠT ĐỘNG",
+                text = "2. OPERATING STATUS",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
@@ -530,15 +531,15 @@ fun StatsGridCard(stats: MiningStats, status: MiningStatus) {
             // Stats items row 1
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatItem(
-                    label = "IP Công cộng",
+                    label = "Public IP",
                     value = stats.ip,
                     icon = Icons.Default.Info,
                     color = CyberSecondary,
                     modifier = Modifier.weight(1f)
                 )
                 StatItem(
-                    label = "Cổng Đường Truyền",
-                    value = if (stats.remotePort > 0) stats.remotePort.toString() else "Chờ bộ rơ-le...",
+                    label = "Remote Port",
+                    value = if (stats.remotePort > 0) stats.remotePort.toString() else "Waiting for relay...",
                     icon = Icons.Default.Share,
                     color = CyberPrimary,
                     modifier = Modifier.weight(1f)
@@ -548,14 +549,14 @@ fun StatsGridCard(stats: MiningStats, status: MiningStatus) {
             // Stats items row 2
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatItem(
-                    label = "Rơ-le Nhịp Tim OK",
+                    label = "Heartbeat OK",
                     value = stats.heartbeatsOk.toString(),
                     icon = Icons.Default.Check,
                     color = CyberPrimary,
                     modifier = Modifier.weight(1f)
                 )
                 StatItem(
-                    label = "Rơ-le Nhịp Tim hỏng",
+                    label = "Heartbeat Error",
                     value = stats.heartbeatsError.toString(),
                     icon = Icons.Default.Warning,
                     color = if (stats.heartbeatsError > 0) CyberTertiary else CyberGray,
@@ -571,18 +572,18 @@ fun StatsGridCard(stats: MiningStats, status: MiningStatus) {
             ) {
                 StateIndicatorBadge(label = "Proxy HTTP Local", active = stats.proxyActive, modifier = Modifier.weight(1f))
                 StateIndicatorBadge(label = "FRPC Tunnel", active = stats.tunnelActive, modifier = Modifier.weight(1f))
-                StateIndicatorBadge(label = "Worker Rơ-le", active = stats.workerActive, modifier = Modifier.weight(1f))
+                StateIndicatorBadge(label = "Relay Worker", active = stats.workerActive, modifier = Modifier.weight(1f))
             }
             
             // Speed / Traffic info
-            Divider(color = CyberCardBorder, thickness = 1.dp)
+            HorizontalDivider(color = CyberCardBorder, thickness = 1.dp)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Dữ liệu truyền dẫn:",
+                    text = "Data Transmitted:",
                     style = MaterialTheme.typography.bodySmall,
                     color = CyberGray
                 )
@@ -733,7 +734,7 @@ fun TerminalLogsCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Không có nhật ký log trống.",
+                        text = "No logs yet.",
                         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                         color = CyberGray
                     )
@@ -755,9 +756,9 @@ fun TerminalLogsCard(
                                 fontSize = 11.sp,
                                 lineHeight = 14.sp
                             ),
-                            color = if (log.contains("LỖI", ignoreCase = true) || log.contains("fail", ignoreCase = true)) {
+                            color = if (log.contains("ERROR", ignoreCase = true) || log.contains("fail", ignoreCase = true)) {
                                 CyberTertiary
-                            } else if (log.contains("thành công", ignoreCase = true) || log.contains("CONNECTED", ignoreCase = true) || log.contains("OK", ignoreCase = true)) {
+                            } else if (log.contains("SUCCESS", ignoreCase = true) || log.contains("CONNECTED", ignoreCase = true) || log.contains("OK", ignoreCase = true)) {
                                 CyberPrimary
                             } else {
                                 CyberTerminalText
@@ -793,7 +794,7 @@ fun AfkOptimizationGuideCard() {
                 ) {
                     Icon(imageVector = Icons.Default.Star, contentDescription = "Guide", tint = CyberPrimary, modifier = Modifier.size(16.dp))
                     Text(
-                        text = "HƯỚNG DẪN AFK KHÔNG BỊ DISCONNECT",
+                        text = "HOW TO AFK WITHOUT GETTING DISCONNECTED",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
@@ -818,36 +819,36 @@ fun AfkOptimizationGuideCard() {
                     modifier = Modifier.padding(top = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Divider(color = CyberCardBorder)
+                    HorizontalDivider(color = CyberCardBorder)
                     
                     Text(
-                        text = "Hệ thống Android có cơ chế quản lý pin cực kỳ nghiêm ngặt và sẽ giết sạch ứng dụng chạy ngầm sau 5-10 phút khi bạn tắt màn hình. Để tối ưu hóa treo 24/7:",
+                        text = "Android OS has extreme battery management and will kill background apps within 5-10 minutes when screen is off. To run 24/7 optimally:",
                         style = MaterialTheme.typography.bodySmall,
                         color = CyberOnSurface.copy(alpha = 0.8f)
                     )
 
                     GuidelineStep(
                         step = "1",
-                        title = "BẬT CHẾ ĐỘ CHỐNG NGỦ (WAKE LOCK)",
-                        desc = "Khi bắt đầu treo, hệ thống đã tự động kích hoạt WakeLock để CPU hoạt động liên tục."
+                        title = "AUTOMATIC WAKE LOCK ENABLED",
+                        desc = "WakeLock is automatically activated to keep CPU running continuously while AFK is active."
                     )
 
                     GuidelineStep(
                         step = "2",
-                        title = "MỞ KHÔNG HẠN CHẾ PIN CHO APP",
-                        desc = "Truy cập Cài đặt hệ thống > Ứng dụng > Tìm ứng dụng 'AFK Minet' > Pin (Battery) > Thiết lập thành 'Không hạn chế' (Unrestricted) thay vì để 'Tối ưu hóa' (Optimized)."
+                        title = "UNRESTRICT BATTERY USAGE",
+                        desc = "Go to Settings > Apps > 'AFK Minet' > Battery > Set to 'Unrestricted' instead of 'Optimized'."
                     )
 
                     GuidelineStep(
                         step = "3",
-                        title = "CHO PHÉP HOẠT ĐỘNG KHÔNG GIỚI HẠN NỀN",
-                        desc = "Đảm bảo quyền chạy dưới nền của ứng dụng được kích hoạt. Hãy khóa ứng dụng vào cửa sổ đa nhiệm để tránh bị bấm tắt nhầm."
+                        title = "ALLOW BACKGROUND ACTIVITY",
+                        desc = "Ensure background execution is allowed. You should also lock the app in your recents/multitasking view so it's not accidentally swiped away."
                     )
 
                     GuidelineStep(
                         step = "4",
-                        title = "TREO CẮM SẠC NƠI THOÁNG MÁT",
-                        desc = "Lượng truyền tải data qua proxy làm việc liên tục có thể sinh nhiệt nhẹ. Hãy giữ điện thoại mát mẻ ở khu vực thông thoáng."
+                        title = "STAY COOL WHILE CHARGING",
+                        desc = "Continuous proxy data transfer may generate slight heat. Keep the phone in a cool, well-ventilated area."
                     )
                 }
             }

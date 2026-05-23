@@ -61,7 +61,6 @@ class MinetService : Service() {
         val proxyStr = intent?.getStringExtra(EXTRA_PROXY) ?: ""
 
         if (email.isEmpty()) {
-            MinetManager.addLog("Lỗi: Không tìm thấy Email cấu hình.")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -88,8 +87,8 @@ class MinetService : Service() {
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AFK Minet Đang Treo Máy")
-            .setContentText("Worker và Tunnel đang chia sẻ băng thông ngầm...")
+            .setContentTitle("AFK Minet Running")
+            .setContentText("Worker and Tunnel are sharing bandwidth silently...")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
@@ -97,21 +96,16 @@ class MinetService : Service() {
 
         try {
             if (Build.VERSION.SDK_INT >= 34) {
-                try {
-                    startForeground(
-                        NOTIFICATION_ID,
-                        notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    )
-                } catch (ex: Exception) {
-                    // Fallback to standard startForeground if dataSync FGS gets rejected or restricted
-                    startForeground(NOTIFICATION_ID, notification)
-                }
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (e: Exception) {
-            MinetManager.addLog("Cảnh báo: Không thể khởi động Dịch vụ chạy ngầm dạng FOREGROUND: ${e.message}")
+            // MinetManager.addLog("Warning: Failed to start Foreground Service - ${e.message}")
         }
     }
 
@@ -136,10 +130,8 @@ class MinetService : Service() {
                         setReferenceCounted(false)
                         acquire()
                     }
-                    MinetManager.addLog("Đã bật Chế độ chống ngủ (WakeLock) để AFK 24/7.")
                 }
             } catch (e: Exception) {
-                MinetManager.addLog("Cơ chế Chống ngủ (WakeLock) gặp lỗi: ${e.message}")
             }
         }
     }
@@ -147,12 +139,10 @@ class MinetService : Service() {
     private fun releaseWakeLock() {
         synchronized(wakeLockLock) {
             try {
-                if (wakeLock?.isHeld == true) {
+                if (wakeLock != null && wakeLock?.isHeld == true) {
                     wakeLock?.release()
-                    MinetManager.addLog("Đã tắt chế độ chống ngủ (WakeLock).")
                 }
             } catch (e: Exception) {
-                MinetManager.addLog("Lỗi tắt chế độ chống ngủ (WakeLock): ${e.message}")
             } finally {
                 wakeLock = null
             }
@@ -164,7 +154,7 @@ class MinetService : Service() {
             try {
                 acquireWakeLock()
                 MinetManager.setStatus(MiningStatus.STARTING)
-                MinetManager.addLog("Bắt đầu cấu hình khai thác AFK...")
+                MinetManager.addLog("Installing Depencies")
 
                 // Update settings in state
                 MinetManager.updateStats { it.copy(email = email) }
@@ -172,14 +162,12 @@ class MinetService : Service() {
                 // 1) Fetch setup script
                 val client = buildOkHttpClient(proxyStr)
                 val ip = fetchIp(client)
-                MinetManager.addLog("IP Công cộng phát hiện: $ip")
                 MinetManager.updateStats { it.copy(ip = ip) }
 
-                MinetManager.addLog("Mã hóa tải cấu hình từ Minet Dashboard...")
                 val rawScript = fetchSetupScript(client, email, ip)
                 val files = extractEmbedded(rawScript, this@MinetService)
                 if (files.isEmpty()) {
-                    throw Exception("Không tìm thấy tệp tin cấu hình nhúng. Vui lòng kiểm tra lại email.")
+                    throw Exception("Embedded config not found. Please check your email.")
                 }
 
                 // 2) Write configs
@@ -189,12 +177,11 @@ class MinetService : Service() {
                         val file = File(filesDir, "tun.toml")
                         file.writeBytes(data)
                         tunTomlFile = file
-                        MinetManager.addLog("Đã ghi cấu hình đường truyền: ${file.name}")
                     }
                 }
 
                 if (tunTomlFile == null || !tunTomlFile!!.exists()) {
-                    throw Exception("Không tìm thấy cấu hình tun.toml hợp lệ.")
+                    throw Exception("Valid tun.toml config not found.")
                 }
 
                 // Parse tun.toml
@@ -204,7 +191,7 @@ class MinetService : Service() {
                 val serverPort = parseRegexValue(tunText, """serverPort\s*=\s*(\d+)""").toIntOrNull() ?: 0
                 val localPort = parseRegexValue(tunText, """localPort\s*=\s*(\d+)""").toIntOrNull() ?: 8888
 
-                MinetManager.addLog("Phân tích cấu hình: Server: $serverAddr:$serverPort | Remote Port: $remotePort | Local Port: $localPort")
+                MinetManager.addLog("Preparing")
                 MinetManager.updateStats { it.copy(
                     remotePort = remotePort,
                     serverAddr = serverAddr,
@@ -214,7 +201,7 @@ class MinetService : Service() {
                 // 3) Resolve frpc binary from APK nativeLibraryDir
                 val frpcFile = File(applicationInfo.nativeLibraryDir, "libfrpc.so")
                 if (!frpcFile.exists()) {
-                    throw Exception("Lỗi hệ thống: Không tìm thấy nhân mạng libfrpc.so (W^X module).")
+                    throw Exception("System error: Network core libfrpc.so not found (W^X module).")
                 }
                 MinetManager.updateStats { it.copy(frpcDownloadProgress = 1.0f) }
 
@@ -222,7 +209,7 @@ class MinetService : Service() {
                 MinetManager.setStatus(MiningStatus.STARTING)
                 proxyServer?.stop()
                 proxyServer = LocalHttpProxy(localPort).apply {
-                    onLog = { msg -> MinetManager.addLog("[Proxy] $msg") }
+                    onLog = {  }
                     onBytesTransferred = { bytes ->
                         MinetManager.addBytes(bytes)
                     }
@@ -233,7 +220,7 @@ class MinetService : Service() {
                 delay(1000)
 
                 // 5) Start frpc process
-                MinetManager.addLog("Đang khởi chạy đường truyền FRPC Tunnel...")
+                MinetManager.addLog("Connecting")
                 val processBuilder = ProcessBuilder(frpcFile.absolutePath, "-c", tunTomlFile!!.absolutePath)
                 processBuilder.directory(filesDir)
                 processBuilder.redirectErrorStream(true) // Merge stderr into stdout to prevent pipe buffer lockups
@@ -245,10 +232,9 @@ class MinetService : Service() {
                     try {
                         var line: String?
                         while (reader.readLine().also { line = it } != null) {
-                            MinetManager.addLog("[Tunnel] $line")
                             if (line!!.contains("login to server success", ignoreCase = true)) {
                                 MinetManager.updateStats { it.copy(tunnelActive = true) }
-                                MinetManager.addLog("Tạo đường truyền tunnel THÀNH CÔNG! Đã kết nối với máy chủ Minet.")
+                                MinetManager.addLog("Connected")
                             }
                         }
                     } catch (e: Exception) {}
@@ -258,7 +244,7 @@ class MinetService : Service() {
                 delay(2000)
                 if (frpcProcess != null && !isProcessAlive(frpcProcess!!)) {
                     val errText = frpcProcess?.errorStream?.bufferedReader()?.readText() ?: ""
-                    throw Exception("FRPC chết đột ngột: $errText")
+                    throw Exception("FRPC crashed unexpectedly: $errText")
                 }
 
                 // 6) Heartbeat loop
@@ -268,7 +254,6 @@ class MinetService : Service() {
 
             } catch (e: Exception) {
                 MinetManager.setStatus(MiningStatus.ERROR)
-                MinetManager.addLog("LỖI KHỞI CHẠY AFK: ${e.message}")
                 MinetManager.updateStats { it.copy(errorDetail = e.message ?: "Unknown error") }
                 stopAFKMining()
             }
@@ -276,7 +261,6 @@ class MinetService : Service() {
     }
 
     private fun stopAFKMining() {
-        MinetManager.addLog("Đang dừng toàn bộ dịch vụ treo máy...")
         MinetManager.updateStats { it.copy(workerActive = false, tunnelActive = false) }
 
         heartbeatJob?.cancel()
@@ -289,7 +273,6 @@ class MinetService : Service() {
         frpcProcess = null
 
         MinetManager.setStatus(MiningStatus.STOPPED)
-        MinetManager.addLog("Hệ thống Treo máy (AFK) đã dừng hoàn toàn.")
         releaseWakeLock()
     }
 
@@ -304,9 +287,7 @@ class MinetService : Service() {
             try {
                 val ip = MinetManager.stats.value.ip
                 updateIpCall(client, email, portEnc, ip)
-                MinetManager.addLog("Đã đồng bộ IP và Port thành công.")
             } catch (e: Exception) {
-                MinetManager.addLog("Cảnh báo: Không thể đồng bộ IP lúc khởi động: ${e.message}")
             }
 
             while (isActive) {
@@ -326,20 +307,17 @@ class MinetService : Service() {
                         // Verify
                         verifyCall(client, email, portEnc, respStr)
                         MinetManager.updateStats { it.copy(heartbeatsOk = it.heartbeatsOk + 1) }
-                        MinetManager.addLog("Nhịp đập rơ-le (Heartbeat) thành công! (+1)")
+                        MinetManager.addLog("Heartbeat")
                     } else {
-                        MinetManager.addLog("Thử lại: Nhận nhịp tim rỗng.")
                     }
                 } catch (e: Exception) {
                     MinetManager.updateStats { it.copy(heartbeatsError = it.heartbeatsError + 1) }
-                    MinetManager.addLog("Nhịp đập rơ-le thất bại: ${e.message}")
                     
                     // Periodically try to re-fetch IP just in case network changed
                     try {
                         val currentIp = fetchIp(client)
                         MinetManager.updateStats { it.copy(ip = currentIp) }
                         updateIpCall(client, email, portEnc, currentIp)
-                        MinetManager.addLog("Đã tự động cập nhật lại IP: $currentIp")
                     } catch (ex: Exception) {}
                 }
 
@@ -440,10 +418,8 @@ class MinetService : Service() {
                     }
                     val proxy = Proxy(proxyType, InetSocketAddress(host, port))
                     builder.proxy(proxy)
-                    MinetManager.addLog("Đã cấu hình Proxy API: $proxy")
                 }
             } catch (e: Exception) {
-                MinetManager.addLog("Cảnh báo: Sai định dạng Proxy API - ${e.message}")
             }
         }
         return builder.build()
