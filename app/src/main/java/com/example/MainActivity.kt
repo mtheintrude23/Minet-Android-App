@@ -51,6 +51,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.DecimalFormat
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,12 +67,71 @@ class MainActivity : ComponentActivity() {
                         .background(CyberBackground),
                     contentWindowInsets = WindowInsets.safeDrawing
                 ) { innerPadding ->
-                    MinetDashboardScreen(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
+                    var showSplash by remember { mutableStateOf(true) }
+
+                    if (showSplash) {
+                        SplashScreen(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            onTimeout = { showSplash = false }
+                        )
+                    } else {
+                        MinetDashboardScreen(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        )
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SplashScreen(modifier: Modifier = Modifier, onTimeout: () -> Unit) {
+    var progress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        val totalTime = 5000L
+        val interval = 50L
+        val steps = totalTime / interval
+        for (i in 1..steps) {
+            progress = i.toFloat() / steps.toFloat()
+            delay(interval)
+        }
+        onTimeout()
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(CyberBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = R.drawable.minet_cropped),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(24.dp))
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.size(64.dp),
+                    color = CyberPrimary,
+                    trackColor = CyberSurface,
+                    strokeWidth = 6.dp
+                )
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                    color = CyberPrimary
+                )
             }
         }
     }
@@ -568,11 +630,39 @@ fun StatsGridCard(stats: MiningStats, status: MiningStatus) {
             Spacer(modifier = Modifier.height(2.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.Center
             ) {
-                StateIndicatorBadge(label = "Proxy HTTP Local", active = stats.proxyActive, modifier = Modifier.weight(1f))
-                StateIndicatorBadge(label = "FRPC Tunnel", active = stats.tunnelActive, modifier = Modifier.weight(1f))
-                StateIndicatorBadge(label = "Relay Worker", active = stats.workerActive, modifier = Modifier.weight(1f))
+                val statusText = when (status) {
+                    MiningStatus.RUNNING -> "Status: Online"
+                    MiningStatus.ERROR -> "Status: Error"
+                    MiningStatus.STOPPED -> "Status: Offline"
+                    MiningStatus.STARTING -> "Status: Starting..."
+                    MiningStatus.DOWNLOADING -> "Status: Downloading..."
+                }
+                val statusColor = when (status) {
+                    MiningStatus.RUNNING -> CyberPrimary
+                    MiningStatus.ERROR -> CyberTertiary
+                    MiningStatus.STOPPED -> CyberGray
+                    MiningStatus.STARTING -> CyberSecondary
+                    MiningStatus.DOWNLOADING -> CyberSecondary
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, statusColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                        .background(statusColor.copy(alpha = 0.1f))
+                        .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(statusColor))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = statusColor
+                    )
+                }
             }
             
             // Speed / Traffic info
