@@ -445,11 +445,6 @@ fun InputCard(
                 )
             )
             
-            Text(
-                text = "* Note: This proxy is only used to send API requests (heartbeat/update-ip) to bypass firewall if necessary. Tunnel still relies on FRPC.",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                color = CyberGray
-            )
         }
     }
 }
